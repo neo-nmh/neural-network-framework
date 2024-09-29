@@ -1,0 +1,17 @@
+main function
+{
+    init data
+    init network with n of layers and n of neurons per layer
+
+    # batch or stochastic ??
+    for i in range(epochs):
+        network.feedforward
+        network.backprop
+
+    test for accuracy on test data
+}
+
+class activationFunction:
+    def forward(self, inputs):
+
+    def backward(self, inputs):
