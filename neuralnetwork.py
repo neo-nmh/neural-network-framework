@@ -49,7 +49,7 @@ class NeuralNetwork:
         self.layers[layerIndex] = Layer(layerSize, inputSize, activationFunction)
 
     # data = entire training set
-    # feeds data[n] to first layer, then feeds prev layer activations
+    # feeds data[] to first layer, then feeds activations forwards
     # store outputs to self.outputs
     # repeat for all training set
     def feedForward(self, data):
@@ -60,10 +60,12 @@ class NeuralNetwork:
 
             outputs[i] = activations
 
+    def backPropogate(self):
+        
+
+
 
             
-
-
 
 if __name__ == "__main__":
     nn = NeuralNetwork(4)

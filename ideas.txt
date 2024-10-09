@@ -1,7 +1,7 @@
 main function
 {
     init data
-    init network with n of layers and n of neurons per layer
+    init network with n of layers and m of neurons per layer
 
     # batch or stochastic ??
     for i in range(epochs):
@@ -15,3 +15,11 @@ class activationFunction:
     def forward(self, inputs):
 
     def backward(self, inputs):
+
+BACKPROPOGATION
+learn vector calculus
+calculate derivative of cost function with respect to outputs
+feed this value back to prev layers and adjust the weights
+
+
+
