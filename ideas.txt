@@ -3,21 +3,16 @@ main function
     init data
     init network with n of layers and m of neurons per layer
 
-    # batch or stochastic ??
     for i in range(epochs):
-        network.feedforward
-        network.backprop
+        network.forward
+        for j in range(weights):
+            network.backward
 
     test for accuracy on test data
 }
 
-class activationFunction:
-    def forward(self, inputs):
-
-    def backward(self, inputs):
-
 bad design:
-when creating the network, all layer sizes and layer input sizesmust be entered in manually and correctly, can live with it though
+when creating the network, all layer sizes and layer input sizesmust be entered in manually and correctly
 
 BACKPROPOGATION
 learn vector calculus
@@ -36,10 +31,12 @@ Do step 1, 2
 4. repeat 2,3 until at layer of weight
 5. calculate derivative of (weighted sum + bias) with respect to weight
 
-Node class might have array of gradients for each weight
+
+Questions:
+
 
 changes made:
-fixed potential bugs
-added weighted sum attribute to node class
-modified feedforward, changed to allow stochastic gradient descent
-
+loss function
+changed feedForward method name to calculateActivation, less confusing
+changed pseudocode of main function
+tried to implement backpropogation, but will change approach since using the derived formulas is much more efficient
