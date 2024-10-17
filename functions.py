@@ -4,7 +4,7 @@ from neuralnetwork import CLASSCOUNT
 
 class ReLu:
     def forward(activations):
-        return np.maximum(0, activations)
+        return (max(0, activations)).item()
 
     def backward(weightedSum):
         if weightedSum > 0:
@@ -15,11 +15,11 @@ class ReLu:
 
 class Sigmoid:
     def forward(activations):
-        return np.float32(1 / (1 + math.exp(-1 * activations)))
+        return 1 / (1 + math.exp(-1 * activations))
 
     def backward(weightedSum):
         sigmoid = 1 / (1 + math.exp(-1 * weightedSum))
-        return np.float32(sigmoid * (1 - sigmoid))
+        return sigmoid * (1 - sigmoid)
 
 
 class Softmax:
@@ -34,7 +34,7 @@ class Loss:
     # 1/2 MSE loss function
     def forward(activations, label):
         loss = 0
-        label = np.array([label])
+        label = np.array(label)
         for i in range(len(activations)):
             loss += (np.square(label[i] - activations[i]))
         loss /= (2 * len(activations))
@@ -42,7 +42,7 @@ class Loss:
 
     # dL/da = -1/n(y-a)
     def backward(activations, label):
-        label = np.array([label])
+        label = np.array(label)
         grad = np.empty(CLASSCOUNT, dtype=np.float32)
         for i in range(CLASSCOUNT):
             grad[i] = (-1 / CLASSCOUNT) * (label[i] - activations[i]) 
