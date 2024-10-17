@@ -2,7 +2,7 @@ import numpy as np
 
 class ReLu:
     def forward(input):
-        return max(0, input)
+        return np.maximum(0, input)
 
     def backward(weightedSum):
         if weightedSum > 0:
