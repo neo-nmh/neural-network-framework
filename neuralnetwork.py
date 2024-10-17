@@ -4,8 +4,8 @@ from initdata import *
 
 TRAININGSIZE = 1
 TESTINGSIZE = 0
-CLASSCOUNT = 10
-LEARNINGRATE = 0.1
+CLASSCOUNT = 1
+LEARNINGRATE = 0.0001
 
 class Node:
     # init with random params, weights are weighted connected from prev layers
@@ -26,6 +26,11 @@ class Node:
     def backPropogate(self, gradient):
         for i in range(self.inputSize):
             self.weights[i] -= LEARNINGRATE * (gradient * self.inputs[i]) # dL/dw
+            """
+            print("gradient")
+            print(LEARNINGRATE * (gradient * self.inputs[i]))
+            print("")
+            """
 
         self.bias -= LEARNINGRATE * gradient                              # dL/db 
 
@@ -69,8 +74,8 @@ class NeuralNetwork:
         self.layers = np.empty(layerCount, dtype=Layer)    # empty array of layers
 
         # these 2 arrays change after every epoch
-        self.outputs = np.empty((TRAININGSIZE,CLASSCOUNT), dtype=np.float32)              # array of outputs
-        self.loss = np.empty(TRAININGSIZE, dtype=np.float32)                 # array of losses
+        self.outputs = np.empty((TRAININGSIZE, CLASSCOUNT), dtype=np.float32)   # array of outputs
+        self.loss = np.empty(TRAININGSIZE, dtype=np.float32)                    # array of losses
 
     # inputSize will just be the previous layer's layerSize (remember when writing main function)
     def addLayer(self, layerIndex, inputSize, layerSize, activationFunction):
@@ -87,21 +92,19 @@ class NeuralNetwork:
         self.outputs[dataIndex] = activations
 
         # calculate and store loss
-        self.loss[dataIndex] = calculateLoss(activations, label)   
+        self.loss[dataIndex] = Loss.forward(activations, label)   
 
     # passes array of gradients to layer recursively
     def backPropogate(self, label, dataIndex): 
-        dLda = np.empty(len(label), dtype=np.float32)
-        for i in range(len(label)):
-            dLda[i] = (-1 / CLASSCOUNT) * (label[i] - self.outputs[dataIndex, i]) # dL/da = -1/n(y-a)
+        dLda = Loss.backward(self.outputs[dataIndex], label)
 
         # finds vector of dLda for every layer, sends to layer to calculate gradients for weights
         for i in range(self.layerCount - 1, 0, -1):
-            temp = self.layers[i].backPropogate(dLda)                         # backpropogates dL/da, returns sum of dL/dz
-            dLdz = np.full(len(self.layers[i].nodes), temp, dtype=np.float32) # array of sum of dLdz (all values same)
+            temp = self.layers[i].backPropogate(dLda)                           # backpropogates dL/da, returns sum of dL/dz
+            dLdz = np.full(len(self.layers[i-1].nodes), temp, dtype=np.float32) # array of sum of dLdz (all values same)
 
-            dzda = np.zeros(len(self.layers[i - 1].nodes), dtype=np.float32)  # how weighted sums changes wrt each activation in layer[i-1]
-            for j in range(len(self.layers[i - 1].nodes)):                    # for each node in layer[i-1], sum the weights of layer ahead
+            dzda = np.zeros(len(self.layers[i - 1].nodes), dtype=np.float32)    # how weighted sums changes wrt each activation in layer[i-1]
+            for j in range(len(self.layers[i - 1].nodes)):                      # for each node in layer[i-1], sum the weights of layer ahead
                 for k in range(len(self.layers[i].nodes)):
                     dzda[j] += self.layers[i].nodes[k].weights[j]
 
@@ -109,10 +112,29 @@ class NeuralNetwork:
 
 
 if __name__ == "__main__":
-    nn = NeuralNetwork(4, np.array([[1,2,3,4,5]]))
-    nn.addLayer(layerIndex=0, inputSize=5, layerSize=10, activationFunction=ReLu)
-    nn.addLayer(layerIndex=1, inputSize=10, layerSize=10, activationFunction=ReLu)
-    nn.addLayer(layerIndex=2, inputSize=10, layerSize=10, activationFunction=ReLu)
-    nn.addLayer(layerIndex=3, inputSize=10, layerSize=10, activationFunction=ReLu)
-    nn.feedForward(label=np.array([0,0,0,0,0,0,0,0,0,1]), dataIndex=0)
-    nn.backPropogate(label=np.array([0,0,0,0,0,0,0,0,0,1]), dataIndex=0)
+    # XOR test
+    trainingData = np.array([
+        np.array([5, 5, 5, 5, 5], dtype=np.float32)
+    ])
+
+    labels = np.array([1000])
+
+    nn = NeuralNetwork(layerCount=4, trainingData=trainingData)
+    nn.addLayer(layerIndex=0, inputSize=5, layerSize=10, activationFunction=Sigmoid)
+    nn.addLayer(layerIndex=1, inputSize=10, layerSize=20, activationFunction=Sigmoid)
+    nn.addLayer(layerIndex=2, inputSize=20, layerSize=10, activationFunction=ReLu)
+    nn.addLayer(layerIndex=3, inputSize=10, layerSize=1, activationFunction=ReLu)
+
+    for i in range(100):
+        nn.feedForward(labels, 0)
+        nn.backPropogate(labels, 0)
+
+        print(f"epoch: {i+1}")
+        print("------------")
+        print("outputs")
+        print(nn.outputs)
+        print("")
+        print("loss")
+        print(nn.loss)
+        print("")
+        
