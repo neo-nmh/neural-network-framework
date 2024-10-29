@@ -10,7 +10,6 @@ def plotLoss(epochs, loss):
 
     x = np.arange(0, epochs, 1)
     plt.plot(x, averageLoss, color="red")
-    plt.ylim(0, 10)
     plt.xlabel("epochs")
     plt.ylabel("loss")
     plt.show()
