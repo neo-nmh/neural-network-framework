@@ -17,8 +17,12 @@ when creating the network, all layer sizes and layer input sizesmust be entered 
 ideas:
 chain rule vs error formulas for backprop
 should refactor backpropogation code?
+look into weight initialization
+look into implementing batches
 
 
 changes made:
 added cross entropy loss meaning no need to calculate jacobian for softmax
 added print statements
+added nothing function
+trying to approximate sine function

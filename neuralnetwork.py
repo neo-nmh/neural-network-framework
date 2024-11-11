@@ -40,13 +40,13 @@ class Node:
 class Layer:
     def __init__(self, layerSize, inputSize, activationFunction):        
         self.layerSize = layerSize
-        self.inputSize = inputSize                     # number of weights connected to each node
+        self.inputSize = inputSize                   
         self.activationFunction = activationFunction
-        self.nodes = np.empty(layerSize, dtype=Node)   # layer stores array of nodes
-        for i in range(layerSize):                     # init random weights for each node
-            self.nodes[i] = Node(inputSize)
+        self.nodes = np.empty(layerSize, dtype=Node) 
         self.activations = np.empty(layerSize, dtype=np.float32)
         self.weightedSum = np.empty(layerSize, dtype=np.float32)
+        for i in range(layerSize):                   
+            self.nodes[i] = Node(inputSize)
 
     # inputs = activations from previous layer
     def calculateActivation(self, inputs):
@@ -57,6 +57,11 @@ class Layer:
         # pass whole layer through activation function
         self.activations = self.activationFunction.forward(self.weightedSum)
 
+        """
+        print("activations: ")
+        print(self.activations)
+        print("")
+        """
         return self.activations # returns vector of activations
 
     # calculates dLdz, adjusts w and b for each node in layer
@@ -89,12 +94,9 @@ class NeuralNetwork:
 
     # using 1 training example at a time
     def feedForward(self, label, dataIndex):
-        print("layer: 0 ", self.layers[0].activationFunction)
         activations = self.layers[0].calculateActivation(self.trainingData[dataIndex])
 
         for i in range(1, self.layerCount): # starting from 2nd layer
-            print("")
-            print("layer: ", i, " ", self.layers[i].activationFunction)
             activations = self.layers[i].calculateActivation(activations)
 
         # storing activations 
@@ -108,60 +110,61 @@ class NeuralNetwork:
         dLda = self.lossfunction.backward(self.outputs[dataIndex], label) # how loss changes w.r.t final layer output
 
         # calculate vector of dLda for every layer, sends this vector to layer class to calculate gradients of weights and bias for this layer
-        for i in range(self.layerCount - 1, 0, -1):                             # starting from 2nd last layer,
-            temp = self.layers[i].backPropogate(dLda)                           # sends dL/da to layer i, returns sum of dL/dz of layer i
-
-            # note: weights + bias of layer have been adjusted by this point, the rest is calculating derivatives needed
+        for i in range(self.layerCount - 1, 0, -1):                               # starting from 2nd last layer,
+            temp = self.layers[i].backPropogate(dLda)                             # sends dL/da to layer i, returns sum of dL/dz of layer i
             dLdz = np.full(len(self.layers[i - 1].nodes), temp, dtype=np.float32) # array of sum of dLdz (all values same)
 
+            # note: weights + bias of layer have been adjusted by this point, the rest is calculating derivatives needed for chain rule
             dzda = np.zeros(len(self.layers[i - 1].nodes), dtype=np.float32)    # how weighted sums changes w.r.t each activation in layer[i-1]
             for j in range(len(self.layers[i - 1].nodes)):                      
                 for k in range(len(self.layers[i].nodes)):                      # for each node in layer[i-1], sum the weights for each 
                     dzda[j] += self.layers[i].nodes[k].weights[j]               # node in layer ahead that connects to this node
-
+                                                          
             dLda = dLdz * dzda
 
 
-TRAININGSIZE = 0
+TRAININGSIZE = 100 
 TESTINGSIZE = 0
-CLASSCOUNT = 0  # size of label vector
-LEARNINGRATE = 0.1
-EPOCHS = 0
+CLASSCOUNT = 1  # size of label vector
+LEARNINGRATE = 1
+EPOCHS = 10
 
 # testing
 if __name__ == "__main__":
-    trainingData = np.array([
-    ])
+    
+    def f(x):
+        return np.sin(x)
 
-    labels = np.array([
-    ])
+    data = np.random.uniform(-2 * np.pi, 2 * np.pi, 100)
+    labels = f(data)
+    data = data.reshape(-1,1)
+    labels = labels.reshape(-1,1)
 
-    nn = NeuralNetwork(layerCount=3, trainingData=trainingData, lossfunction=CrossEntropy)
-    nn.addLayer(layerIndex=0, inputSize=1, layerSize=3, activationFunction=ReLu)
-    nn.addLayer(layerIndex=1, inputSize=3, layerSize=3, activationFunction=ReLu)
-    nn.addLayer(layerIndex=2, inputSize=3, layerSize=CLASSCOUNT, activationFunction=Softmax)
+    trainingData = np.array(data)
+
+    labels = np.array(labels)
+
+    nn = NeuralNetwork(layerCount=3, trainingData=trainingData, lossfunction=MSE)
+    nn.addLayer(layerIndex=0, inputSize=1, layerSize=20, activationFunction=Sigmoid)
+    nn.addLayer(layerIndex=1, inputSize=20, layerSize=20, activationFunction=Sigmoid)
+    nn.addLayer(layerIndex=2, inputSize=20, layerSize=CLASSCOUNT, activationFunction=Sigmoid)
 
 
     losses = np.empty((EPOCHS, TRAININGSIZE), dtype=np.float32)
     for i in range(EPOCHS):
-        print("-----------")
-        print("EPOCH ", i)
         for j in range(TRAININGSIZE):
-            print("")
-            print("training example: ", j)
             nn.feedForward(labels[j], j)
+            print("loss: ")
+            print(np.mean(nn.loss))
+            print("")
             nn.backPropogate(labels[j], j)
 
         # 2d array of losses for each epoch
         losses[i] = nn.loss
 
-        print("")
-        print("outputs")
-        print(nn.outputs)
-        print("")
-        print("loss")
-        print(nn.loss)
-        print("")
+    plt.scatter(data,labels)
+    plt.scatter(data, nn.outputs, color="r")
+    plt.show()
 
     plotLoss(EPOCHS, losses)
         

@@ -39,6 +39,14 @@ class Sigmoid:
 
         return outputs
 
+class Nothing:
+    def forward(activation):
+        return activation
+
+    def backward(weightedSum, activation, gradient):
+        return gradient
+
+
 class Softmax:
     def forward(activations):
         outputs = np.empty((len(activations)), dtype=np.float32)
