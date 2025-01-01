@@ -1,3 +1,3 @@
-Implementation of a Fully Connected Neural Network
+Implementation of a Convolutional Neural Network
 
 This is for my EPQ project
