@@ -22,7 +22,9 @@ look into implementing batches
 
 
 changes made:
-added cross entropy loss meaning no need to calculate jacobian for softmax
-added print statements
-added nothing function
-trying to approximate sine function
+cleaned up functions.py
+added tanh
+just realized that sigmoid cant be negative so thats why it doesn't work
+sin approximation works
+
+
