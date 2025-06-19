@@ -126,8 +126,8 @@ class NeuralNetwork:
 TRAININGSIZE = 200 
 TESTINGSIZE = 0
 CLASSCOUNT = 1  # size of label vector
-LEARNINGRATE = 0.01
-EPOCHS = 10000
+LEARNINGRATE = 0.2
+EPOCHS = 50
 
 # testing
 if __name__ == "__main__":
@@ -135,7 +135,7 @@ if __name__ == "__main__":
     def f(x):
         return np.sin(x)
 
-    data = np.random.uniform(-2 * np.pi, 2 * np.pi, 200)
+    data = np.sort(np.random.uniform(-2 * np.pi, 2 * np.pi, 200))
     labels = f(data)
     data = data.reshape(-1,1)
     labels = labels.reshape(-1,1)
@@ -164,7 +164,7 @@ if __name__ == "__main__":
         losses[i] = nn.loss
 
     plt.scatter(data,labels)
-    plt.scatter(data, nn.outputs, color="r")
+    plt.plot(data, nn.outputs, color="r")
     plt.show()
 
     plotLoss(EPOCHS, losses)
