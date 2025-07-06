@@ -1,21 +1,19 @@
-main function
+main function psuedocode
 {
     init data
-    init network with n of layers and m of neurons per layer
+    init network with layers and number of neurons per layer
 
     for i in range(epochs):
         network.forward
-        for j in range(weights):
-            network.backward
+        network.backward
 
     test for accuracy on test data
+    record stats
 }
 
-bad design:
-when creating the network, all layer sizes and layer input sizesmust be entered in manually and correctly
 
 BACKPROPOGATION
-learn vector calculus
+learn vector calculus (not really)
 calculate derivative of cost function with respect to outputs
 feed this value back to prev layers and adjust the weights using differentiation chain rule
 
@@ -31,12 +29,15 @@ Do step 1, 2
 4. repeat 2,3 until at layer of weight
 5. calculate derivative of (weighted sum + bias) with respect to weight
 
+bad design:
+when creating the network, all layer sizes and layer input sizesmust be entered in manually and correctly
 
-Questions:
+
+ideas:
+chain rule vs error formulas for backprop
 
 
 changes made:
-loss function
-changed feedForward method name to calculateActivation, less confusing
-changed pseudocode of main function
-tried to implement backpropogation, but will change approach since using the derived formulas is much more efficient
+fixed A LOT of bugs for feed forward
+feed foward works (i think)
+attempted backpropogation but havent tested
