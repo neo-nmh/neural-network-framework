@@ -1,19 +1,20 @@
 import numpy as np
 from functions import *
 from initdata import *
+from visualizations import *
 
-TRAININGSIZE = 1
+TRAININGSIZE = 2
 TESTINGSIZE = 0
-CLASSCOUNT = 1
-LEARNINGRATE = 0.0001
+CLASSCOUNT = 5
+LEARNINGRATE = 0.000000001
 
 class Node:
     # init with random params, weights are weighted connected from prev layers
     def __init__(self, inputSize):
         self.inputSize = inputSize
         self.inputs = np.empty(inputSize, dtype=np.float32)
-        self.weights = np.float32(np.random.rand(inputSize))
-        self.bias = np.float32(np.random.rand())
+        self.weights = np.float32(np.ones(inputSize))
+        self.bias = np.float32(np.ones(1))
 
     # calculate and stores activation and weighted sum
     def calculateActivation(self, inputs, activationFunction):
@@ -114,27 +115,36 @@ class NeuralNetwork:
 if __name__ == "__main__":
     # XOR test
     trainingData = np.array([
-        np.array([5, 5, 5, 5, 5], dtype=np.float32)
+        [1, 1],
+        [2, 2]
     ])
 
-    labels = np.array([1000])
+    labels = np.array([
+        [1000, 1000, 1000, 1000, 1000],
+        [2000, 2000, 2000, 2000, 2000]
+    ])
 
     nn = NeuralNetwork(layerCount=4, trainingData=trainingData)
-    nn.addLayer(layerIndex=0, inputSize=5, layerSize=10, activationFunction=Sigmoid)
-    nn.addLayer(layerIndex=1, inputSize=10, layerSize=20, activationFunction=Sigmoid)
-    nn.addLayer(layerIndex=2, inputSize=20, layerSize=10, activationFunction=ReLu)
-    nn.addLayer(layerIndex=3, inputSize=10, layerSize=1, activationFunction=ReLu)
+    nn.addLayer(layerIndex=0, inputSize=2, layerSize=6, activationFunction=ReLu)
+    nn.addLayer(layerIndex=1, inputSize=6, layerSize=10, activationFunction=ReLu)
+    nn.addLayer(layerIndex=2, inputSize=10, layerSize=7, activationFunction=ReLu)
+    nn.addLayer(layerIndex=3, inputSize=7, layerSize=5, activationFunction=ReLu)
 
-    for i in range(100):
-        nn.feedForward(labels, 0)
-        nn.backPropogate(labels, 0)
+    EPOCHS = 1000        
 
-        print(f"epoch: {i+1}")
-        print("------------")
-        print("outputs")
+    losses = np.empty((EPOCHS, TRAININGSIZE), dtype=np.float32)
+    for i in range(EPOCHS):
+        for j in range(TRAININGSIZE):
+            nn.feedForward(labels[j], j)
+            nn.backPropogate(labels[j], j)
+
+        # 2d array of losses for each epoch
+        losses[i] = nn.loss
+
+        print("outputs, loss")
         print(nn.outputs)
-        print("")
-        print("loss")
         print(nn.loss)
         print("")
+
+    plotLoss(EPOCHS, losses)
         

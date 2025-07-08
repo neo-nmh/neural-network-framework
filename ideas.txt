@@ -35,7 +35,8 @@ when creating the network, all layer sizes and layer input sizesmust be entered 
 
 ideas:
 chain rule vs error formulas for backprop
+should refactor backpropogation code
 
 
 changes made:
-added new activation function
+added loss function visualization
