@@ -55,7 +55,7 @@ class Layer:
     def backPropogate(self, gradient):
         dLdz = 0
         for i in range(self.layerSize):
-            temp = gradient[i] * activationFunction.backward(self.nodes[i].weightedSum) # gradient * da/dz of each node
+            temp = gradient[i] * self.activationFunction.backward(self.nodes[i].weightedSum) # gradient * da/dz of each node
             self.nodes[i].backPropogate(temp)
             dLdz += temp
 
@@ -65,7 +65,7 @@ class Layer:
 class NeuralNetwork:
     def __init__(self, layerCount, trainingData):
         self.trainingData = trainingData                   # array of all training examples, 2d array
-        self.layerCount = layerCount
+        self.layerCount = layerCount                       # how many layers in the network
         self.layers = np.empty(layerCount, dtype=Layer)    # empty array of layers
 
         # these 2 arrays change after every epoch
@@ -90,21 +90,20 @@ class NeuralNetwork:
         self.loss[dataIndex] = calculateLoss(activations, label)   
 
     # passes array of gradients to layer recursively
-    def backPropogate(self, dataIndex): 
-        print(self.trainingData[dataIndex])
-        print(self.outputs[dataIndex])
-        dLda = (-1 / CLASSCOUNT) * (self.trainingData[dataIndex] - self.outputs[dataIndex]) # dL/da
+    def backPropogate(self, label, dataIndex): 
+        dLda = np.empty(len(label), dtype=np.float32)
+        for i in range(len(label)):
+            dLda[i] = (-1 / CLASSCOUNT) * (label[i] - self.outputs[dataIndex, i]) # dL/da = -1/n(y-a)
 
-        for i in range(self.layerCount - 1, -1, -1):
-            dLda = np.full(len(self.layers[i].nodes), dLda)    # dL/da of layer i
-            temp = self.layers[i].backPropogate(dLda)          # backpropogate dL/da, returns sum of dL/dz
-            dLdz = np.full(temp, len(self.layer[i].nodes))     # array of sum of dLdz (all values same)
+        # finds vector of dLda for every layer, sends to layer to calculate gradients for weights
+        for i in range(self.layerCount - 1, 0, -1):
+            temp = self.layers[i].backPropogate(dLda)                         # backpropogates dL/da, returns sum of dL/dz
+            dLdz = np.full(len(self.layers[i].nodes), temp, dtype=np.float32) # array of sum of dLdz (all values same)
 
-            # array length of layer i-1 
-            dzda = np.zeros(len(self.layers[i - 1].nodes), dtype=np.float32) # how weighted sums changes wrt each activation in layer[i-1]
-            for j in range(len(self.layers[i - 1].nodes)):                   # for each node in layer[i-1], sum the weights going forward 
+            dzda = np.zeros(len(self.layers[i - 1].nodes), dtype=np.float32)  # how weighted sums changes wrt each activation in layer[i-1]
+            for j in range(len(self.layers[i - 1].nodes)):                    # for each node in layer[i-1], sum the weights of layer ahead
                 for k in range(len(self.layers[i].nodes)):
-                    dzda[j] += self.layers[i].nodes.weights[j]
+                    dzda[j] += self.layers[i].nodes[k].weights[j]
 
             dLda = dLdz * dzda
 
@@ -115,5 +114,5 @@ if __name__ == "__main__":
     nn.addLayer(layerIndex=1, inputSize=10, layerSize=10, activationFunction=ReLu)
     nn.addLayer(layerIndex=2, inputSize=10, layerSize=10, activationFunction=ReLu)
     nn.addLayer(layerIndex=3, inputSize=10, layerSize=10, activationFunction=ReLu)
-    nn.feedForward(label=[0,0,0,0,0,0,0,0,0,1], dataIndex=0)
-    nn.backPropogate(dataIndex=0)
+    nn.feedForward(label=np.array([0,0,0,0,0,0,0,0,0,1]), dataIndex=0)
+    nn.backPropogate(label=np.array([0,0,0,0,0,0,0,0,0,1]), dataIndex=0)

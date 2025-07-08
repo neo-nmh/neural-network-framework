@@ -38,6 +38,4 @@ chain rule vs error formulas for backprop
 
 
 changes made:
-fixed A LOT of bugs for feed forward
-feed foward works (i think)
-attempted backpropogation but havent tested
+fixed loss function logic for dLda
