@@ -38,4 +38,4 @@ chain rule vs error formulas for backprop
 
 
 changes made:
-fixed loss function logic for dLda
+added new activation function
