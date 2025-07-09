@@ -11,12 +11,6 @@ main function psuedocode
     record stats
 }
 
-
-BACKPROPOGATION
-learn vector calculus (not really)
-calculate derivative of cost function with respect to outputs
-feed this value back to prev layers and adjust the weights using differentiation chain rule
-
 TO ADJUST 1 SINGLE WEIGHT CONNECTING TO LAST LAYER:
 1. calculate derivative of loss with respect to activation of a single node
 2. calculate derivative of activation of single node with respect to (weighted sum + bias) 
@@ -39,4 +33,6 @@ should refactor backpropogation code
 
 
 changes made:
-added loss function visualization
+modifying activation functions to operate on whole layers instead of individual nodes (forward and backwards)
+added softmax
+got rid of activations for node class
