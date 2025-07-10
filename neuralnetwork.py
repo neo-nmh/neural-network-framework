@@ -8,7 +8,7 @@ class Node:
     def __init__(self, inputSize):
         self.inputSize   = inputSize
         self.inputs      = np.empty(inputSize, dtype=np.float32)
-        self.weights     = np.float32(np.random.rand(inputSize))
+        self.weights     = np.float32(np.random.rand(inputSize) * np.sqrt(2 / inputSize))
         self.bias        = np.float32(np.random.rand(1))
         self.weightedSum = np.float32(0)
 
@@ -111,8 +111,8 @@ class NeuralNetwork:
 
         # calculate vector of dLda for every layer, sends this vector to layer class to calculate gradients of weights and bias for this layer
         for i in range(self.layerCount - 1, 0, -1):                               # starting from 2nd last layer,
-            temp = self.layers[i].backPropogate(dLda)                             # sends dL/da to layer i, returns sum of dL/dz of layer i
-            dLdz = np.full(len(self.layers[i - 1].nodes), temp, dtype=np.float32) # array of sum of dLdz (all values same)
+            dLdz = self.layers[i].backPropogate(dLda)                             # sends dL/da to layer i, returns sum of dL/dz of layer i
+            dLdz = np.full(len(self.layers[i - 1].nodes), dLdz, dtype=np.float32) # array of sum of dLdz (all values same)
 
             # note: weights + bias of layer have been adjusted by this point, the rest is calculating derivatives needed for chain rule
             dzda = np.zeros(len(self.layers[i - 1].nodes), dtype=np.float32)    # how weighted sums changes w.r.t each activation in layer[i-1]
@@ -123,11 +123,11 @@ class NeuralNetwork:
             dLda = dLdz * dzda
 
 
-TRAININGSIZE = 100 
+TRAININGSIZE = 200 
 TESTINGSIZE = 0
 CLASSCOUNT = 1  # size of label vector
-LEARNINGRATE = 1
-EPOCHS = 10
+LEARNINGRATE = 0.01
+EPOCHS = 10000
 
 # testing
 if __name__ == "__main__":
@@ -135,7 +135,7 @@ if __name__ == "__main__":
     def f(x):
         return np.sin(x)
 
-    data = np.random.uniform(-2 * np.pi, 2 * np.pi, 100)
+    data = np.random.uniform(-2 * np.pi, 2 * np.pi, 200)
     labels = f(data)
     data = data.reshape(-1,1)
     labels = labels.reshape(-1,1)
@@ -144,10 +144,11 @@ if __name__ == "__main__":
 
     labels = np.array(labels)
 
+    # REMEMBER: CHANGE LAYER INDEX AND LAYER COUNT
     nn = NeuralNetwork(layerCount=3, trainingData=trainingData, lossfunction=MSE)
-    nn.addLayer(layerIndex=0, inputSize=1, layerSize=20, activationFunction=Sigmoid)
-    nn.addLayer(layerIndex=1, inputSize=20, layerSize=20, activationFunction=Sigmoid)
-    nn.addLayer(layerIndex=2, inputSize=20, layerSize=CLASSCOUNT, activationFunction=Sigmoid)
+    nn.addLayer(layerIndex=0, inputSize=1, layerSize=10, activationFunction=Tanh)
+    nn.addLayer(layerIndex=1, inputSize=10, layerSize=10, activationFunction=Tanh)
+    nn.addLayer(layerIndex=2, inputSize=10, layerSize=CLASSCOUNT, activationFunction=Tanh)
 
 
     losses = np.empty((EPOCHS, TRAININGSIZE), dtype=np.float32)
