@@ -13,7 +13,7 @@ class ReLu:
         return outputs
 
     # ReLu doesn't use 'activations' parameter
-    def backward(weightedSum, activations):
+    def backward(weightedSum, activations, gradient):
         outputs = np.empty(len(weightedSum), dtype=np.float32)
         for i in range(len(weightedSum)):
             if weightedSum[i] > 0:
@@ -32,7 +32,7 @@ class Sigmoid:
 
         return outputs
 
-    def backward(weightedSum, activations):
+    def backward(weightedSum, activations, gradient):
         outputs = np.empty(len(weightedSum), dtype=np.float32)
         for i in range(len(weightedSum)):
             outputs[i] = activations[i] * (1 - activations[i])
@@ -53,50 +53,34 @@ class Softmax:
 
         return outputs
 
-    # takes in a vector of weighted sums (z) with n rows
-    # derivative w.r.t z[i] is a vector of n rows,
-    # where nth row is how activation[n] changes w.r.t z[i]
-    # these vectors can be represented as a jacobian matrix (n x n)
-    def backward(weightedSum, activations):
-        # temporary array for each column of jacobian 
-        print("")
-        print("inside softmax backward")
-        print("weightedsum", weightedSum)
-        print("activations", activations)
-        jacobian = np.empty(len(weightedSum), dtype=np.float32)
-
-        # sum of each column of jacobian
-        outputs = np.empty(len(weightedSum), dtype=np.float32)
-
-        # i = inputs, j = outputs
-        # when i == j, derivative is different
-        for i in range(len(weightedSum)):
-            for j in range(len(weightedSum)):
-                if i == j:
-                    jacobian[j] = activations[i] * (1 - activations[i])
-                else:
-                    jacobian[j] = (-1 * activations[j]) * activations[i]
-            outputs[i] = np.sum(jacobian)
-        print("outputs ", outputs)
-
-        print("")
-        return outputs # returns sum of each column of jacobian matrix
+    # this only works with cross entropy 
+    def backward(weightedSum, activations, gradient):
+        return  gradient
 
 
-class Loss:
+class MSE:
     # 1/2 MSE loss function
     def forward(activations, label):
         loss = 0
-        label = np.array(label)
         for i in range(len(activations)):
             loss += (np.square(label[i] - activations[i]))
         loss /= (2 * len(activations))
+
         return loss
 
     # dL/da = -1/n(y-a)
     def backward(activations, label):
-        label = np.array(label)
         grad = np.empty(CLASSCOUNT, dtype=np.float32)
         for i in range(CLASSCOUNT):
             grad[i] = (-1 / CLASSCOUNT) * (label[i] - activations[i]) 
+
         return grad
+
+class CrossEntropy:
+    def forward(activations, label):
+        activations = np.clip(activations, 1e-15, 1 - 1e-15) # prevents log(0)
+        loss = np.sum(label * np.log(activations))
+        return -1 * loss
+
+    def backward(activations, label):
+        return activations - label

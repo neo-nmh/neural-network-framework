@@ -1,27 +1,14 @@
-main function psuedocode
-{
-    init data
-    init network with layers and number of neurons per layer
+DATA
+60k training images
+train-images-idx3-ubyte.gz 
+train-labels-idx3-ubyte.gz 
 
-    for i in range(epochs):
-        network.forward
-        network.backward
+10k test images
+t10k-images-idx3-ubyte.gz
+t10k-labels-idx3-ubyte.gz
 
-    test for accuracy on test data
-    record stats
-}
+TODO: init data
 
-TO ADJUST 1 SINGLE WEIGHT CONNECTING TO LAST LAYER:
-1. calculate derivative of loss with respect to activation of a single node
-2. calculate derivative of activation of single node with respect to (weighted sum + bias) 
-3. calculate derivative of (weighted sum + bias) with respect to 1 weight
-4. weight = weight - (learningrate x gradient)
-
-TO ADJUST 1 SINGLE WEIGHT MORE THAN 1 LAYER FROM LAST LAYER:
-Do step 1, 2
-3. calculate derivative of (weighted sum + bias) with respect to prev activation
-4. repeat 2,3 until at layer of weight
-5. calculate derivative of (weighted sum + bias) with respect to weight
 
 bad design:
 when creating the network, all layer sizes and layer input sizesmust be entered in manually and correctly
@@ -29,10 +16,9 @@ when creating the network, all layer sizes and layer input sizesmust be entered 
 
 ideas:
 chain rule vs error formulas for backprop
-should refactor backpropogation code
+should refactor backpropogation code?
 
 
 changes made:
-modifying activation functions to operate on whole layers instead of individual nodes (forward and backwards)
-added softmax
-got rid of activations for node class
+added cross entropy loss meaning no need to calculate jacobian for softmax
+added print statements
