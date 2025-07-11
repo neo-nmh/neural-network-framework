@@ -1,6 +1,7 @@
 import numpy as np
 import math
-from neuralnetwork import CLASSCOUNT
+from neuralnetwork import CLASSSIZE
+
 
 # activation functions operate on whole layers at a time
 class ReLu:
@@ -10,7 +11,6 @@ class ReLu:
     # ReLu doesn't use 'activations' parameter
     def backward(weightedSum, activations, gradient):
         return weightedSum > 0
-
 
 class Sigmoid:
     def forward(activations):
@@ -38,15 +38,15 @@ class Nothing:
 class Softmax:
     def forward(activations):
         # denominator is sum of exp(activations)
-        expSum = np.sum(np.exp(i))
+        expSum = np.sum(np.exp(activations))
         return np.exp(activations) / expSum
 
     # this only works with cross entropy 
     def backward(weightedSum, activations, gradient):
-        return  gradient
+        return gradient
 
 
-# 1/2 MSE loss function
+# 1/2 MSE 
 class MSE:
     def forward(activations, label):
         loss = np.sum((np.square(label - activations)))
@@ -54,11 +54,11 @@ class MSE:
 
     # dL/da = -1/n(y-a)
     def backward(activations, label):
-        return (-1 / CLASSCOUNT) * (label - activations)
+        return (-1 / CLASSSIZE) * (label - activations)
 
 class CrossEntropy:
     def forward(activations, label):
-        activations = np.clip(activations, 1e-15, 1 - 1e-15) # prevents log(0)
+        # activations = np.clip(activations, 1e-15, 1 - 1e-15) # prevents log(0)
         return -1 * np.sum(label * np.log(activations))
 
     def backward(activations, label):

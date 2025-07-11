@@ -22,9 +22,4 @@ look into implementing batches
 
 
 changes made:
-cleaned up functions.py
-added tanh
-just realized that sigmoid cant be negative so thats why it doesn't work
-sin approximation works
-
 
