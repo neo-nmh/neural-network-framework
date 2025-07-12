@@ -14,3 +14,8 @@ def plotImage(image, index, label):
     plt.imshow(image)
     plt.title(f"label: {np.argmax(label)} index: {index}")
     plt.show()
+
+def plotBarChart(categories, values):
+    plt.bar(categories, values)
+    plt.show()
+

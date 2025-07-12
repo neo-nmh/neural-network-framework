@@ -8,7 +8,7 @@ class Node:
     def __init__(self, inputSize):
         self.inputSize   = inputSize
         self.inputs      = np.empty(inputSize, dtype=np.float32)
-        self.weights     = np.float32(np.random.rand(inputSize))
+        self.weights     = np.float32(np.random.uniform(-1.0 / np.sqrt(inputSize), 1.0 / np.sqrt(inputSize), inputSize))
         self.bias        = np.float32(np.random.rand())
         self.weightedSum = np.float32(0)
 
@@ -119,7 +119,7 @@ class NeuralNetwork:
 # mnist_train has 60,000
 # mnist_test has 10,000
 
-TRAININGSIZE = 600 
+TRAININGSIZE = 1000 
 TESTINGSIZE = 10 
 FEATURESIZE = 784
 CLASSSIZE = 10 
@@ -131,10 +131,11 @@ if __name__ == "__main__":
     data = initData(trainSize=TRAININGSIZE, testSize=TESTINGSIZE, classSize=CLASSSIZE)
 
     # init neural network
-    nn = NeuralNetwork(layerCount=3, trainingData=data["trainImages"], lossfunction=CrossEntropy)
-    nn.addLayer(layerIndex=0, inputSize=784, layerSize=128, activationFunction=Sigmoid)
-    nn.addLayer(layerIndex=1, inputSize=128, layerSize=128, activationFunction=Sigmoid)
-    nn.addLayer(layerIndex=2, inputSize=128, layerSize=CLASSSIZE, activationFunction=Softmax)
+    nn = NeuralNetwork(layerCount=4, trainingData=data["trainImages"], lossfunction=CrossEntropy)
+    nn.addLayer(layerIndex=0, inputSize=784, layerSize=512, activationFunction=Sigmoid)
+    nn.addLayer(layerIndex=1, inputSize=512, layerSize=256, activationFunction=Sigmoid)
+    nn.addLayer(layerIndex=2, inputSize=256, layerSize=128, activationFunction=Sigmoid)
+    nn.addLayer(layerIndex=3, inputSize=128, layerSize=CLASSSIZE, activationFunction=Softmax)
 
     # train and store losses
     losses = np.empty((EPOCHS * TRAININGSIZE), dtype=np.float32)
@@ -163,3 +164,4 @@ if __name__ == "__main__":
     print(scores)
     print(f"Accuracy: {np.sum(scores) / len(scores) * 100}%\n")
     plotLoss(trainingSteps=TRAININGSIZE * EPOCHS, losses=losses)
+    plotBarChart(categories=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], values=predictActivations[0])
