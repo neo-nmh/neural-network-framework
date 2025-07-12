@@ -9,7 +9,7 @@ class Node:
         self.inputSize   = inputSize
         self.inputs      = np.empty(inputSize, dtype=np.float32)
         self.weights     = np.float32(np.random.uniform(-1.0 / np.sqrt(inputSize), 1.0 / np.sqrt(inputSize), inputSize))
-        self.bias        = np.float32(np.random.rand())
+        self.bias        = np.float32(0)
         self.weightedSum = np.float32(0)
 
     # calculate and stores weighted sum 
@@ -60,7 +60,13 @@ class Layer:
         for i in range(self.layerSize):   
             self.nodes[i].backPropogate(dLdz[i])
 
-        return np.sum(dLdz) # return sum of dL/dz for this layer (used for backprop to prev layers)
+        # Calculate gradient for each input to this layer
+        input_gradients = np.zeros(self.inputSize, dtype=np.float32)
+        for i in range(self.inputSize):      # for each input
+            for j in range(self.layerSize):  # sum over all nodes in this layer
+                input_gradients[i] += dLdz[j] * self.nodes[j].weights[i]
+        
+        return input_gradients
 
     
 class NeuralNetwork:
@@ -90,23 +96,12 @@ class NeuralNetwork:
         # calculate and store loss
         self.loss[dataIndex] = self.lossfunction.forward(activations, label)   
 
-    # passes vector of gradients to each layer 
-    def backPropogate(self, label, dataIndex): 
-        dLda = self.lossfunction.backward(self.outputs[dataIndex], label) # how loss changes w.r.t final layer output
-        # print(f"loss gradient {dLda}\n")
+    def backPropogate(self, label, dataIndex):
+        dLda = self.lossfunction.backward(self.outputs[dataIndex], label)
 
-        # calculate vector of dLda for every layer, sends this vector to layer class to calculate gradients of weights and bias for this layer
-        for i in range(self.layerCount - 1, 0, -1):                               # starting from 2nd last layer,
-            dLdz = self.layers[i].backPropogate(dLda)                             # sends dL/da to layer i, returns sum of dL/dz of layer i
-            # print(f"layer gradient return : {dLdz}")
-            dLdz = np.full(len(self.layers[i - 1].nodes), dLdz, dtype=np.float32) # array of sum of dLdz (all values same)
-            # note: weights + bias of layer have been adjusted by this point, the rest is calculating derivatives needed for chain rule
-            dzda = np.zeros(len(self.layers[i - 1].nodes), dtype=np.float32)    # how weighted sums changes w.r.t each activation in layer[i-1]
-            for j in range(len(self.layers[i - 1].nodes)):                      
-                for k in range(len(self.layers[i].nodes)):                      # for each node in layer[i-1], sum the weights for each 
-                    dzda[j] += self.layers[i].nodes[k].weights[j]               # node in layer ahead that connects to this node
-                                                          
-            dLda = dLdz * dzda
+        for i in range(self.layerCount - 1, -1, -1):
+            dLda = self.layers[i].backPropogate(dLda)  # Now returns vector, not scalar
+
 
     def classify(self, data):
         activations = self.layers[0].calculateActivation(data)
@@ -119,8 +114,8 @@ class NeuralNetwork:
 # mnist_train has 60,000
 # mnist_test has 10,000
 
-TRAININGSIZE = 1000 
-TESTINGSIZE = 10 
+TRAININGSIZE = 6000
+TESTINGSIZE = 500 
 FEATURESIZE = 784
 CLASSSIZE = 10 
 LEARNINGRATE = np.float32(0.001)
@@ -131,11 +126,11 @@ if __name__ == "__main__":
     data = initData(trainSize=TRAININGSIZE, testSize=TESTINGSIZE, classSize=CLASSSIZE)
 
     # init neural network
-    nn = NeuralNetwork(layerCount=4, trainingData=data["trainImages"], lossfunction=CrossEntropy)
+    nn = NeuralNetwork(layerCount=4, trainingData=data["trainImages"], lossfunction=MSE)
     nn.addLayer(layerIndex=0, inputSize=784, layerSize=512, activationFunction=Sigmoid)
     nn.addLayer(layerIndex=1, inputSize=512, layerSize=256, activationFunction=Sigmoid)
     nn.addLayer(layerIndex=2, inputSize=256, layerSize=128, activationFunction=Sigmoid)
-    nn.addLayer(layerIndex=3, inputSize=128, layerSize=CLASSSIZE, activationFunction=Softmax)
+    nn.addLayer(layerIndex=3, inputSize=128, layerSize=CLASSSIZE, activationFunction=Sigmoid)
 
     # train and store losses
     losses = np.empty((EPOCHS * TRAININGSIZE), dtype=np.float32)
@@ -164,4 +159,3 @@ if __name__ == "__main__":
     print(scores)
     print(f"Accuracy: {np.sum(scores) / len(scores) * 100}%\n")
     plotLoss(trainingSteps=TRAININGSIZE * EPOCHS, losses=losses)
-    plotBarChart(categories=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], values=predictActivations[0])
