@@ -19,7 +19,7 @@ class Node:
         return self.weightedSum
 
     # adjust weights and bias
-    def backPropogate(self, gradient):
+    def backPropagate(self, gradient):
         for i in range(self.inputSize):
             self.weights[i] -= LEARNINGRATE * (gradient * self.inputs[i]) # dL/dw
             # print("WEIGHT ADJUSTED BY", LEARNINGRATE * (gradient * self.inputs[i]))
@@ -52,13 +52,13 @@ class Layer:
 
     # calculates dLdz, adjusts w and b for each node in layer
     # gradient = vector of dL/da of each node 
-    def backPropogate(self, gradient):
+    def backPropagate(self, gradient):
         dadz = self.activationFunction.backward(self.weightedSum, self.activations, gradient)
         dLdz = dadz * gradient
 
         # adjust w and b for each node
         for i in range(self.layerSize):   
-            self.nodes[i].backPropogate(dLdz[i])
+            self.nodes[i].backPropagate(dLdz[i])
 
         # Calculate gradient for each input to this layer
         input_gradients = np.zeros(self.inputSize, dtype=np.float32)
@@ -77,7 +77,7 @@ class NeuralNetwork:
         self.lossfunction = lossfunction
 
         # these 2 arrays change after every epoch
-        self.outputs = np.empty((TRAININGSIZE, CLASSSIZE), dtype=np.float32)   # array of outputs
+        self.outputs = np.empty((TRAININGSIZE, CLASSSIZE), dtype=np.float32)    # array of outputs
         self.loss = np.empty(TRAININGSIZE, dtype=np.float32)                    # array of losses
 
     def addLayer(self, layerIndex, inputSize, layerSize, activationFunction):
@@ -96,11 +96,11 @@ class NeuralNetwork:
         # calculate and store loss
         self.loss[dataIndex] = self.lossfunction.forward(activations, label)   
 
-    def backPropogate(self, label, dataIndex):
+    def backPropagate(self, label, dataIndex):
         dLda = self.lossfunction.backward(self.outputs[dataIndex], label)
 
         for i in range(self.layerCount - 1, -1, -1):
-            dLda = self.layers[i].backPropogate(dLda)  # Now returns vector, not scalar
+            dLda = self.layers[i].backPropagate(dLda) 
 
 
     def classify(self, data):
@@ -114,8 +114,8 @@ class NeuralNetwork:
 # mnist_train has 60,000
 # mnist_test has 10,000
 
-TRAININGSIZE = 6000
-TESTINGSIZE = 500 
+TRAININGSIZE = 60000
+TESTINGSIZE = 2000 
 FEATURESIZE = 784
 CLASSSIZE = 10 
 LEARNINGRATE = np.float32(0.001)
@@ -126,11 +126,10 @@ if __name__ == "__main__":
     data = initData(trainSize=TRAININGSIZE, testSize=TESTINGSIZE, classSize=CLASSSIZE)
 
     # init neural network
-    nn = NeuralNetwork(layerCount=4, trainingData=data["trainImages"], lossfunction=MSE)
-    nn.addLayer(layerIndex=0, inputSize=784, layerSize=512, activationFunction=Sigmoid)
-    nn.addLayer(layerIndex=1, inputSize=512, layerSize=256, activationFunction=Sigmoid)
-    nn.addLayer(layerIndex=2, inputSize=256, layerSize=128, activationFunction=Sigmoid)
-    nn.addLayer(layerIndex=3, inputSize=128, layerSize=CLASSSIZE, activationFunction=Sigmoid)
+    nn = NeuralNetwork(layerCount=3, trainingData=data["trainImages"], lossfunction=MSE)
+    nn.addLayer(layerIndex=0, inputSize=784, layerSize=256, activationFunction=ReLu)
+    nn.addLayer(layerIndex=1, inputSize=256, layerSize=128, activationFunction=ReLu)
+    nn.addLayer(layerIndex=2, inputSize=128, layerSize=CLASSSIZE, activationFunction=ReLu)
 
     # train and store losses
     losses = np.empty((EPOCHS * TRAININGSIZE), dtype=np.float32)
@@ -140,7 +139,7 @@ if __name__ == "__main__":
             nn.feedForward(data["trainLabels"][j], j)
             losses[trainingStep] = nn.loss[j]
             print(f"loss: {nn.loss[j]}")
-            nn.backPropogate(data["trainLabels"][j], j)
+            nn.backPropagate(data["trainLabels"][j], j)
             trainingStep += 1
 
 

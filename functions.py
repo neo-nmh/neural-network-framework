@@ -10,7 +10,7 @@ class ReLu:
 
     # ReLu doesn't use 'activations' parameter
     def backward(weightedSum, activations, gradient):
-        return weightedSum > 0
+        return (weightedSum > 0).astype(int)
 
 class Sigmoid:
     def forward(activations):

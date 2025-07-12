@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+from visualizations import *
 
 def initData(trainSize, testSize, classSize):
     trainData = pd.read_csv('./data/mnist_train.csv', nrows=trainSize).to_numpy()

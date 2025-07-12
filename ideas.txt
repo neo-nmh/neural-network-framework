@@ -1,22 +1,10 @@
-DATA
-60k training images
-train-images-idx3-ubyte.gz 
-train-labels-idx3-ubyte.gz 
-
-10k test images
-t10k-images-idx3-ubyte.gz
-t10k-labels-idx3-ubyte.gz
-
-TODO: init data
-
-
 bad design:
 when creating the network, all layer sizes and layer input sizesmust be entered in manually and correctly
 
 
 ideas:
 chain rule vs error formulas for backprop
-should refactor backpropogation code?
+should refactor backpropagation code?
 look into weight initialization
 look into implementing batches
 
