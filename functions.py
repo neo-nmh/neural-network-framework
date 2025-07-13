@@ -1,65 +1,57 @@
 import numpy as np
-import math
 from neuralnetwork import CLASSSIZE
 
 
 # activation functions operate on whole layers at a time
 class ReLu:
-    def forward(activations):
-        return (activations > 0) * activations
+    def forward(weightedSum):
+        return (weightedSum > 0) * weightedSum
 
     # ReLu doesn't use 'activations' parameter
-    def backward(weightedSum, activations, gradient):
+    def backward(weightedSum, activations):
         return (weightedSum > 0).astype(int)
 
 class Sigmoid:
-    def forward(activations):
-        return 1 / (1 + np.exp(-1 * activations))
+    def forward(weightedSum):
+        return 1 / (1 + np.exp(-1 * weightedSum))
 
-    def backward(weightedSum, activations, gradient):
+    def backward(weightedSum, activations):
         return activations * (1 - activations)
 
 class Tanh:
-    def forward(activations):
-        return np.tanh(activations)
+    def forward(weightedSum):
+        return np.tanh(weightedSum)
 
-    def backward(weightedSum, activations, gradient):
+    def backward(weightedSum, activations):
         return 1 - (activations ** 2)
 
-
-class Nothing:
-    def forward(activation):
-        return activation
-
-    def backward(weightedSum, activation, gradient):
-        return gradient
-
-
 class Softmax:
-    def forward(activations):
-        # denominator is sum of exp(activations)
-        expSum = np.sum(np.exp(activations))
-        return np.exp(activations) / expSum
+    def forward(weightedSum):
+        # shift values by max to prevent overflow
+        shifted = weightedSum - np.max(weightedSum)
+        expSum = np.sum(np.exp(shifted))
+        return np.exp(shifted) / expSum
 
     # this only works with cross entropy 
-    def backward(weightedSum, activations, gradient):
-        return gradient
+    def backward(weightedSum, activations):
+        return 1
 
 
-# 1/2 MSE 
+# loss functions
 class MSE:
     def forward(activations, label):
         loss = np.sum((np.square(label - activations)))
         return loss / (2 * len(activations))
 
-    # dL/da = -1/n(y-a)
+    # dL/da = 1/n(a-y)
     def backward(activations, label):
-        return (-1 / CLASSSIZE) * (label - activations)
+        return (1 / CLASSSIZE) * (activations - label)
 
 class CrossEntropy:
     def forward(activations, label):
-        # activations = np.clip(activations, 1e-15, 1 - 1e-15) # prevents log(0)
+        activations = np.clip(activations, 1e-12, 1. - 1e-12) # prevents log(0)
         return -1 * np.sum(label * np.log(activations))
 
+    # this only works with softmax 
     def backward(activations, label):
         return activations - label
