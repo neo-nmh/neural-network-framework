@@ -5,69 +5,137 @@ from initdata import *
 from visualizations import *
 from initdata import *
 
+# numpy array print settings
 np.set_printoptions(suppress=True, precision=2)
 
-class Layer:
-    def __init__(self, layerSize, inputSize, weightInitialization, activationFunction):        
-        self.layerSize = layerSize
-        self.inputSize = inputSize                   
+class ConvolutionalLayer:
+    def __init__(
+            self, inputSize, inputDepth, kernelSize, 
+            kernelCount, stride, weightInitialization, activationFunction):
+        self.inputSize          = inputSize
+        self.inputDepth         = inputDepth
+        self.kernelSize         = kernelSize
+        self.kernelCount        = kernelCount
+        self.fanIn              = (kernelSize ** 2) * inputDepth
+        self.stride             = stride
         self.activationFunction = activationFunction
-        self.weights = weightInitialization(layerSize=layerSize, inputSize=inputSize)
-        self.biases = np.zeros(layerSize, dtype=np.float32)
-        self.activations = np.empty((BATCHSIZE, layerSize), dtype=np.float32)
-        self.weightedSum = np.empty((BATCHSIZE, layerSize), dtype=np.float32)
+        self.convolutionLength  = inputSize - kernelSize + 1
+        self.activationSize     = ((inputSize - kernelSize) // stride) + 1
+        self.activations        = np.empty((BATCHSIZE, kernelCount, self.activationSize, self.activationSize), dtype=np.float32)
+        self.inputs             = np.empty((BATCHSIZE, inputDepth, inputSize, inputSize), dtype=np.float32)
+        self.kernels            = np.empty((kernelCount, inputDepth, kernelSize, kernelSize), dtype=np.float32)
+        self.biases             = np.zeros((kernelCount, 1), dtype=np.float32)
+        for i in range(kernelCount):
+            self.kernels[i] = weightInitialization(fanIn=(self.fanIn), kernelSize=(kernelSize), kernelDepth=(inputDepth))
+            print(f"kernel {i}")
+            print(self.kernels[i])
+            print("")
+        self.kernelMatrix = self.kernels.reshape(self.kernelCount, self.fanIn) 
+
+    # kernelMatrix = 1 flattened kernel for each row
+    # patchMatrix  = 1 flattened image patch for each column
+    # activations  = 1 output image for each row
+    def feedForward(self, input, batchItemIndex):
+        self.inputs[batchItemIndex] = input
+
+        i = 0
+        patchMatrix = np.empty((self.fanIn, self.activationSize ** 2), dtype=np.float32)
+        for j in range(0, self.convolutionLength, self.stride):
+            for k in range(0, self.convolutionLength, self.stride):
+                patchMatrix[:, i] = input[:, j:(j + self.kernelSize), k:(k + self.kernelSize)].flatten()
+                i += 1
+
+        activations = self.activationFunction.forward((self.kernelMatrix @ patchMatrix) + self.biases)
+        activationsReshaped = activations.reshape(self.kernelCount, self.activationSize, self.activationSize)
+        self.activations[batchItemIndex] = activationsReshaped
+
+        # returns activations shaped as images
+        return activationsReshaped
+
+    def backPropagate():
+        return 0
+
+class PoolingLayer:
+    def __init__(self, inputSize, inputDepth, poolingFunction):
+        self.inputSize       = inputSize
+        self.inputDepth      = inputDepth
+        self.poolingFunction = poolingFunction
+
+    def feedForward():
+        return 0
+
+    def backPropagate():
+        return 1
+
+class FullyConnectedLayer:
+    def __init__(self, layerSize, inputSize, weightInitialization, activationFunction):        
+        self.layerSize          = layerSize
+        self.inputSize          = inputSize                   
+        self.activationFunction = activationFunction
+        self.weights            = weightInitialization(fanOut=layerSize, fanIn=inputSize)
+        self.biases             = np.zeros(layerSize, dtype=np.float32)
+        self.activations        = np.empty((BATCHSIZE, layerSize), dtype=np.float32)
+        self.inputs             = np.empty((BATCHSIZE, inputSize), dtype=np.float32)
+        self.weightedSum        = np.empty((BATCHSIZE, layerSize), dtype=np.float32)
 
     def feedForward(self, input, batchItemIndex):
-        self.input = input
-        self.weightedSum[batchItemIndex] = np.matmul(self.weights, input)
-        self.activations[batchItemIndex] = self.activationFunction.forward(self.weightedSum[batchItemIndex])
-        return self.activations[batchItemIndex]
+        self.inputs[batchItemIndex] = input
+        self.weightedSum[batchItemIndex] = self.weights @ input
+
+        activations = self.activationFunction.forward(self.weightedSum[batchItemIndex])
+        self.activations[batchItemIndex] = activations
+
+        return activations
 
     def backPropagate(self, nextLayerBatchGradients, nextLayerWeights):
-        # calculate batch gradient
+        # calculate gradients to pass back 
         batchGradients = np.zeros((BATCHSIZE, self.layerSize), dtype=np.float32)
         for i in range(BATCHSIZE):
             dadz = self.activationFunction.backward(self.weightedSum[i], self.activations[i])
-            batchGradients[i] = (np.matmul(np.transpose(nextLayerWeights), nextLayerBatchGradients[i])) * dadz
+            batchGradients[i] = (nextLayerWeights.T @ nextLayerBatchGradients[i]) * dadz
 
-        # calculate average and change weights + biases
-        averageGradient = np.sum(batchGradients, axis=0) / BATCHSIZE
+        # change w and b
+        dLdw = (batchGradients.T @ self.inputs) / BATCHSIZE
+        averageGradient = batchGradients.mean(axis=0) 
         self.biases -= LEARNINGRATE * averageGradient
-        self.weights -= LEARNINGRATE * np.outer(averageGradient, self.input)
+        self.weights -= LEARNINGRATE * dLdw
 
-        # return to pass to prev layers
+        # pass gradients to prev layer
         return batchGradients
 
-class OutputLayer(Layer):
+# gradient calculation for this layer is different
+class OutputLayer(FullyConnectedLayer):
     def backPropagate(self, dLda):
-        # calculate batch gradient
+        # calculate gradients to pass back 
         batchGradients = np.zeros((BATCHSIZE, CLASSSIZE), dtype=np.float32)
         for i in range(BATCHSIZE):
             dadz = self.activationFunction.backward(self.weightedSum[i], self.activations[i])
             batchGradients[i] = dLda * dadz
 
-        # calculate average and change weights + biases
-        averageGradient = np.sum(batchGradients, axis=0) / BATCHSIZE
+        # change w and b
+        dLdw = (batchGradients.T @ self.inputs) / BATCHSIZE
+        averageGradient = batchGradients.mean(axis=0) 
         self.biases -= LEARNINGRATE * averageGradient
-        self.weights -= LEARNINGRATE * np.outer(averageGradient, self.input)
+        self.weights -= LEARNINGRATE * dLdw
 
-        # return to pass to prev layers
+        # pass gradients to prev layer
         return batchGradients
 
     
 class NeuralNetwork:
     def __init__(self, layerCount, lossfunction):
-        self.layerCount = layerCount                       
-        self.layers = [0] * layerCount
+        self.layerCount   = layerCount                       
+        self.layers       = [0] * layerCount
         self.lossfunction = lossfunction
 
         # these 2 arrays change after every epoch
         self.outputs = np.empty((TRAININGSIZE // BATCHSIZE, BATCHSIZE, CLASSSIZE), dtype=np.float32)   
         self.loss = np.empty((TRAININGSIZE // BATCHSIZE, BATCHSIZE), dtype=np.float32)                   
 
-    def addLayer(self, layerIndex, inputSize, layerSize, layerType, weightInitialization, activationFunction):
-        if layerType == "hidden":
-            self.layers[layerIndex] = Layer(layerSize, inputSize, weightInitialization, activationFunction)
+    def addLayer(self, layerIndex, inputSize, layerSize, 
+                 layerType, weightInitialization, activationFunction):
+        if layerType == "fullyConnected":
+            self.layers[layerIndex] = FullyConnectedLayer(layerSize, inputSize, weightInitialization, activationFunction)
         elif layerType == "output":
             self.layers[layerIndex] = OutputLayer(layerSize, inputSize, weightInitialization, activationFunction)
         
@@ -106,7 +174,7 @@ FEATURESIZE = 784
 BATCHSIZE = 1
 CLASSSIZE = 10 
 LEARNINGRATE = np.float32(0.001)
-EPOCHS = 30
+EPOCHS = 1
 
 if __name__ == "__main__":
     # init data
@@ -118,7 +186,7 @@ if __name__ == "__main__":
 
     # init network
     nn = NeuralNetwork(layerCount=2, lossfunction=CrossEntropy)
-    nn.addLayer(layerIndex=0, inputSize=784, layerSize=128, layerType="hidden", weightInitialization=heNormal, activationFunction=ReLu)
+    nn.addLayer(layerIndex=0, inputSize=784, layerSize=128, layerType="fullyConnected", weightInitialization=heNormal, activationFunction=Tanh)
     nn.addLayer(layerIndex=1, inputSize=128, layerSize=CLASSSIZE, layerType="output", weightInitialization=heNormal, activationFunction=Softmax)
 
     # train network
@@ -126,11 +194,13 @@ if __name__ == "__main__":
     for i in range(EPOCHS):
         print(f"epoch: {i}")
         dataIndex = 0
+
         # shuffle training data 
         indices = np.arange(TRAININGSIZE)
         np.random.shuffle(indices)
         trainImages[:] = trainImages[indices]
         trainLabels[:] = trainLabels[indices]
+
         for j in range(TRAININGSIZE // BATCHSIZE):
             batchLabels = []
             for k in range(BATCHSIZE):
@@ -151,7 +221,7 @@ if __name__ == "__main__":
     
     print(f"training size:  {TRAININGSIZE}")
     print(f"testing size:   {TESTINGSIZE}")
-    print(f"training steps: {len(losses)}")
+    print(f"gradient steps: {len(losses)}")
     print(f"batch size:     {BATCHSIZE}")
     print(f"learning rate:  {LEARNINGRATE:.2g}")
     print(f"EPOCHS:         {EPOCHS}")

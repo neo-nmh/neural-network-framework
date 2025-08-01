@@ -5,7 +5,7 @@ from neuralnetwork import CLASSSIZE
 # activation functions operate on whole layers at a time
 class ReLu:
     def forward(weightedSum):
-        return (weightedSum > 0) * weightedSum
+        return np.maximum(0, weightedSum)
 
     # ReLu doesn't use 'activations' parameter
     def backward(weightedSum, activations):
@@ -24,6 +24,13 @@ class Tanh:
 
     def backward(weightedSum, activations):
         return 1 - (activations ** 2)
+
+class Nothing:
+    def forward(weightedSum):
+        return weightedSum
+
+    def backward(weightedSum, activations):
+        return 1
 
 class Softmax:
     def forward(weightedSum):
@@ -55,3 +62,9 @@ class CrossEntropy:
     # this only works with softmax 
     def backward(activations, label):
         return activations - label
+
+# pooling functions
+# class MaxPool
+
+
+# class AveragePool

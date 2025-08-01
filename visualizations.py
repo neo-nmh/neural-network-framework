@@ -10,10 +10,16 @@ def plotLoss(losses):
     plt.ylabel("loss")
     plt.show()
 
-def plotImage(image, index, label):
-    image = np.reshape(image, (28, 28))
+def plotImage(image, title):
+    image = np.reshape(image, (len(image), len(image)))
     plt.imshow(image)
-    plt.title(f"label: {np.argmax(label)} index: {index}")
+    plt.title(title)
+    plt.colorbar()
+    plt.show()
+
+def plotMultipleImages(image):
+    image = np.reshape(image, (len(image), len(image)))
+    plt.imshow(image)
     plt.show()
 
 def plotBarChart(categories, values):
