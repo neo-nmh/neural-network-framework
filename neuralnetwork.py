@@ -1,5 +1,6 @@
 import numpy as np
 from functions import *
+from poolingfunctions import *
 from weightinitializations import *
 from initdata import *
 from visualizations import *
@@ -11,18 +12,19 @@ np.set_printoptions(suppress=True, precision=2)
 class ConvolutionalLayer:
     def __init__(
             self, inputSize, inputDepth, kernelSize, 
-            kernelCount, stride, weightInitialization, activationFunction):
-        self.inputSize          = inputSize
+            kernelCount, stride, padding, weightInitialization, activationFunction):
+        self.inputSize          = inputSize + (padding * 2)
         self.inputDepth         = inputDepth
         self.kernelSize         = kernelSize
         self.kernelCount        = kernelCount
         self.fanIn              = (kernelSize ** 2) * inputDepth
         self.stride             = stride
+        self.padding            = padding
         self.activationFunction = activationFunction
-        self.convolutionLength  = inputSize - kernelSize + 1
-        self.activationSize     = ((inputSize - kernelSize) // stride) + 1
+        self.convolutionLength  = self.inputSize - kernelSize + 1
+        self.activationSize     = ((self.inputSize - kernelSize) // stride) + 1
         self.activations        = np.empty((BATCHSIZE, kernelCount, self.activationSize, self.activationSize), dtype=np.float32)
-        self.inputs             = np.empty((BATCHSIZE, inputDepth, inputSize, inputSize), dtype=np.float32)
+        self.inputs             = np.empty((BATCHSIZE, inputDepth, self.inputSize, self.inputSize), dtype=np.float32)
         self.kernels            = np.empty((kernelCount, inputDepth, kernelSize, kernelSize), dtype=np.float32)
         self.biases             = np.zeros((kernelCount, 1), dtype=np.float32)
         for i in range(kernelCount):
@@ -36,8 +38,16 @@ class ConvolutionalLayer:
     # patchMatrix  = 1 flattened image patch for each column
     # activations  = 1 output image for each row
     def feedForward(self, input, batchItemIndex):
+        # pad and store input
+        input = np.pad(
+            input, 
+            pad_width=((0,0), (self.padding, self.padding), (self.padding, self.padding)),
+            mode="constant",
+            constant_values=0
+        )
         self.inputs[batchItemIndex] = input
 
+        # fill patch matrix
         i = 0
         patchMatrix = np.empty((self.fanIn, self.activationSize ** 2), dtype=np.float32)
         for j in range(0, self.convolutionLength, self.stride):
@@ -45,24 +55,47 @@ class ConvolutionalLayer:
                 patchMatrix[:, i] = input[:, j:(j + self.kernelSize), k:(k + self.kernelSize)].flatten()
                 i += 1
 
+        # calculate activations
         activations = self.activationFunction.forward((self.kernelMatrix @ patchMatrix) + self.biases)
         activationsReshaped = activations.reshape(self.kernelCount, self.activationSize, self.activationSize)
         self.activations[batchItemIndex] = activationsReshaped
 
-        # returns activations shaped as images
+        # return activations shaped as images
         return activationsReshaped
 
     def backPropagate():
         return 0
 
 class PoolingLayer:
-    def __init__(self, inputSize, inputDepth, poolingFunction):
-        self.inputSize       = inputSize
-        self.inputDepth      = inputDepth
-        self.poolingFunction = poolingFunction
+    def __init__(self, inputSize, inputDepth, kernelSize, stride, poolingFunction):
+        self.inputSize         = inputSize
+        self.inputDepth        = inputDepth
+        self.kernelSize        = kernelSize
+        self.stride            = stride
+        self.poolingFunction   = poolingFunction
+        self.convolutionLength = inputSize - kernelSize + 1
+        self.activationSize    = ((inputSize - kernelSize) // stride) + 1
+        self.activations       = np.empty((BATCHSIZE, inputDepth, self.activationSize, self.activationSize), dtype=np.float32)
+        self.inputs            = np.empty((BATCHSIZE, inputDepth, self.inputSize, self.inputSize), dtype=np.float32)
 
-    def feedForward():
-        return 0
+    def feedForward(self, input, batchItemIndex):
+        self.inputs[batchItemIndex] = input
+
+        # calculate activations
+        row = 0
+        for j in range(0, self.convolutionLength, self.stride):
+            col = 0
+            for k in range(0, self.convolutionLength, self.stride):
+                self.activations[batchItemIndex, :, row, col] = (
+                    self.poolingFunction.forward(
+                            input[:, j:(j + self.kernelSize), k:(k + self.kernelSize)]
+                    ).reshape(-1)
+                )
+                col += 1
+            row += 1
+
+        # return activations shaped as images
+        return self.activations[batchItemIndex]
 
     def backPropagate():
         return 1
@@ -129,7 +162,7 @@ class NeuralNetwork:
         self.lossfunction = lossfunction
 
         # these 2 arrays change after every epoch
-        self.outputs = np.empty((TRAININGSIZE // BATCHSIZE, BATCHSIZE, CLASSSIZE), dtype=np.float32)   
+        self.activations = np.empty((TRAININGSIZE // BATCHSIZE, BATCHSIZE, CLASSSIZE), dtype=np.float32)   
         self.loss = np.empty((TRAININGSIZE // BATCHSIZE, BATCHSIZE), dtype=np.float32)                   
 
     def addLayer(self, layerIndex, inputSize, layerSize, 
@@ -144,7 +177,7 @@ class NeuralNetwork:
         for i in range(1, self.layerCount): 
             activations = self.layers[i].feedForward(activations, batchItemIndex)
 
-        self.outputs[batchIndex, batchItemIndex] = activations
+        self.activations[batchIndex, batchItemIndex] = activations
 
         self.loss[batchIndex, batchItemIndex] = self.lossfunction.forward(activations, label)   
 
@@ -153,7 +186,7 @@ class NeuralNetwork:
     def backPropagate(self, batchLabels, batchIndex):
         dLda = np.zeros(CLASSSIZE, dtype=np.float32)
         for i in range(BATCHSIZE):
-            dLda += self.lossfunction.backward(self.outputs[batchIndex, i], batchLabels[i])
+            dLda += self.lossfunction.backward(self.activations[batchIndex, i], batchLabels[i])
 
         dLda /= BATCHSIZE
         batchGradient = self.layers[self.layerCount - 1].backPropagate(dLda) # returns dLdz for batch

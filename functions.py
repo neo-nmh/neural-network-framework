@@ -64,7 +64,11 @@ class CrossEntropy:
         return activations - label
 
 # pooling functions
-# class MaxPool
+class MaxPool:
+    def forward(input):
+        return np.max(input)
 
 
-# class AveragePool
+class AveragePool:
+    def forward(input):
+        return np.average(input)

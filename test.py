@@ -1,6 +1,7 @@
 import numpy as np
 from functions import *
 from weightinitializations import *
+from poolingfunctions import *
 from initdata import *
 from visualizations import *
 from initdata import *
@@ -12,18 +13,19 @@ np.set_printoptions(suppress=True, precision=2)
 class ConvolutionalLayer:
     def __init__(
             self, inputSize, inputDepth, kernelSize, 
-            kernelCount, stride, weightInitialization, activationFunction):
-        self.inputSize          = inputSize
+            kernelCount, stride, padding, weightInitialization, activationFunction):
+        self.inputSize          = inputSize + (padding * 2)
         self.inputDepth         = inputDepth
         self.kernelSize         = kernelSize
         self.kernelCount        = kernelCount
         self.fanIn              = (kernelSize ** 2) * inputDepth
         self.stride             = stride
+        self.padding            = padding
         self.activationFunction = activationFunction
-        self.convolutionLength  = inputSize - kernelSize + 1
-        self.activationSize     = ((inputSize - kernelSize) // stride) + 1
+        self.convolutionLength  = self.inputSize - kernelSize + 1
+        self.activationSize     = ((self.inputSize - kernelSize) // stride) + 1
         self.activations        = np.empty((BATCHSIZE, kernelCount, self.activationSize, self.activationSize), dtype=np.float32)
-        self.inputs             = np.empty((BATCHSIZE, inputDepth, inputSize, inputSize), dtype=np.float32)
+        self.inputs             = np.empty((BATCHSIZE, inputDepth, self.inputSize, self.inputSize), dtype=np.float32)
         self.kernels            = np.empty((kernelCount, inputDepth, kernelSize, kernelSize), dtype=np.float32)
         self.biases             = np.zeros((kernelCount, 1), dtype=np.float32)
         for i in range(kernelCount):
@@ -37,8 +39,16 @@ class ConvolutionalLayer:
     # patchMatrix  = 1 flattened image patch for each column
     # activations  = 1 output image for each row
     def feedForward(self, input, batchItemIndex):
+        # pad and store input
+        input = np.pad(
+            input, 
+            pad_width=((0,0), (self.padding, self.padding), (self.padding, self.padding)),
+            mode="constant",
+            constant_values=0
+        )
         self.inputs[batchItemIndex] = input
 
+        # fill patch matrix
         i = 0
         patchMatrix = np.empty((self.fanIn, self.activationSize ** 2), dtype=np.float32)
         for j in range(0, self.convolutionLength, self.stride):
@@ -46,12 +56,50 @@ class ConvolutionalLayer:
                 patchMatrix[:, i] = input[:, j:(j + self.kernelSize), k:(k + self.kernelSize)].flatten()
                 i += 1
 
+        # calculate activations
         activations = self.activationFunction.forward((self.kernelMatrix @ patchMatrix) + self.biases)
         activationsReshaped = activations.reshape(self.kernelCount, self.activationSize, self.activationSize)
         self.activations[batchItemIndex] = activationsReshaped
 
-        # returns activations shaped as images
+        # return activations shaped as images
         return activationsReshaped
+
+    def backPropagate():
+        return 0
+
+class PoolingLayer:
+    def __init__(self, inputSize, inputDepth, kernelSize, stride, poolingFunction):
+        self.inputSize         = inputSize
+        self.inputDepth        = inputDepth
+        self.kernelSize        = kernelSize
+        self.stride            = stride
+        self.poolingFunction   = poolingFunction
+        self.convolutionLength = inputSize - kernelSize + 1
+        self.activationSize    = ((inputSize - kernelSize) // stride) + 1
+        self.activations       = np.empty((BATCHSIZE, inputDepth, self.activationSize, self.activationSize), dtype=np.float32)
+        self.inputs            = np.empty((BATCHSIZE, inputDepth, self.inputSize, self.inputSize), dtype=np.float32)
+
+    def feedForward(self, input, batchItemIndex):
+        self.inputs[batchItemIndex] = input
+
+        # calculate activations
+        row = 0
+        for j in range(0, self.convolutionLength, self.stride):
+            col = 0
+            for k in range(0, self.convolutionLength, self.stride):
+                self.activations[batchItemIndex, :, row, col] = (
+                    self.poolingFunction.forward(
+                            input[:, j:(j + self.kernelSize), k:(k + self.kernelSize)]
+                    ).reshape(-1)
+                )
+                col += 1
+            row += 1
+
+        # return activations shaped as images
+        return self.activations[batchItemIndex]
+
+    def backPropagate():
+        return 1
 
 TRAININGSIZE = 100
 TESTINGSIZE = 1 
@@ -72,18 +120,35 @@ if __name__ == "__main__":
     convLayer = ConvolutionalLayer(
         inputSize=28, 
         inputDepth=1,
-        kernelSize=5,
-        kernelCount=10, 
+        kernelSize=3,
+        kernelCount=5, 
         stride=1, 
+        padding=1,
         weightInitialization=heNormalConv, 
-        activationFunction=ReLu)
+        activationFunction=ReLu
+    )
+
+    poolingLayer = PoolingLayer(
+        inputSize=convLayer.activationSize,
+        inputDepth=convLayer.kernelCount,
+        kernelSize=2,
+        stride=2,
+        poolingFunction=MaxPool
+    )
 
     inputImage = trainImages[np.random.randint(1, 100)].reshape(1,28,28)
-    output = convLayer.feedForward(input=inputImage, batchItemIndex=0)
+    convOutput = convLayer.feedForward(input=inputImage, batchItemIndex=0)
+    poolingOutput = poolingLayer.feedForward(input=convOutput, batchItemIndex=0)
 
-    plotImage(image=inputImage.reshape(28,28), title="input")
+    plotImage(image=convLayer.inputs[0, 0], title="input")
 
-    for i in range(len(output)):
-        plotImage(image=output[i], title=f"kernel {i}")
+    print(f"input shape: {convLayer.inputSize}")
+    print(f"conv shape : {convOutput.shape}")
+    for i in range(len(convOutput)):
+        plotImage(image=convOutput[i], title=f"kernel {i}")
+
+    print(f"pool shape : {poolingOutput.shape}")
+    for i in range(len(poolingOutput)):
+        plotImage(image=poolingOutput[i], title=f"kernel {i}")
 
     
