@@ -27,6 +27,7 @@ class ConvolutionalLayer:
         self.inputs             = np.empty((BATCHSIZE, inputDepth, self.inputSize, self.inputSize), dtype=np.float32)
         self.kernels            = np.empty((kernelCount, inputDepth, kernelSize, kernelSize), dtype=np.float32)
         self.biases             = np.zeros((kernelCount, 1), dtype=np.float32)
+        self.weightedSum        = np.empty((BATCHSIZE, kernelCount, self.activationSize, self.activationSize), dtype=np.float32)
         for i in range(kernelCount):
             self.kernels[i] = weightInitialization(fanIn=(self.fanIn), kernelSize=(kernelSize), kernelDepth=(inputDepth))
             print(f"kernel {i}")
@@ -55,8 +56,12 @@ class ConvolutionalLayer:
                 patchMatrix[:, i] = input[:, j:(j + self.kernelSize), k:(k + self.kernelSize)].flatten()
                 i += 1
 
+        # calculate weighted sum
+        weightedSum = (self.kernelMatrix @ patchMatrix) + self.biases
+        self.weightedSum[batchItemIndex] = weightedSum.reshape(self.kernelCount, self.activationSize, self.activationSize)
+
         # calculate activations
-        activations = self.activationFunction.forward((self.kernelMatrix @ patchMatrix) + self.biases)
+        activations = self.activationFunction.forward(weightedSum)
         activationsReshaped = activations.reshape(self.kernelCount, self.activationSize, self.activationSize)
         self.activations[batchItemIndex] = activationsReshaped
 
@@ -98,7 +103,7 @@ class PoolingLayer:
         return self.activations[batchItemIndex]
 
     def backPropagate():
-        return 1
+        return 0
 
 class FullyConnectedLayer:
     def __init__(self, layerSize, inputSize, weightInitialization, activationFunction):        
@@ -112,6 +117,10 @@ class FullyConnectedLayer:
         self.weightedSum        = np.empty((BATCHSIZE, layerSize), dtype=np.float32)
 
     def feedForward(self, input, batchItemIndex):
+        # if input is from conv or pooling layer
+        if input.ndim > 1:
+            input = input.flatten()
+
         self.inputs[batchItemIndex] = input
         self.weightedSum[batchItemIndex] = self.weights @ input
 
@@ -160,17 +169,34 @@ class NeuralNetwork:
         self.layerCount   = layerCount                       
         self.layers       = [0] * layerCount
         self.lossfunction = lossfunction
-
         # these 2 arrays change after every epoch
-        self.activations = np.empty((TRAININGSIZE // BATCHSIZE, BATCHSIZE, CLASSSIZE), dtype=np.float32)   
-        self.loss = np.empty((TRAININGSIZE // BATCHSIZE, BATCHSIZE), dtype=np.float32)                   
+        self.activations  = np.empty((TRAININGSIZE // BATCHSIZE, BATCHSIZE, CLASSSIZE), dtype=np.float32)   
+        self.loss         = np.empty((TRAININGSIZE // BATCHSIZE, BATCHSIZE), dtype=np.float32)                   
 
-    def addLayer(self, layerIndex, inputSize, layerSize, 
-                 layerType, weightInitialization, activationFunction):
+    def addLayer(self, layerIndex, **kwargs):
+        layerType = kwargs.get('layerType')
+        
         if layerType == "fullyConnected":
-            self.layers[layerIndex] = FullyConnectedLayer(layerSize, inputSize, weightInitialization, activationFunction)
+            self.layers[layerIndex] = FullyConnectedLayer(
+                kwargs['layerSize'], kwargs['inputSize'], 
+                kwargs['weightInitialization'], kwargs['activationFunction']
+            )
         elif layerType == "output":
-            self.layers[layerIndex] = OutputLayer(layerSize, inputSize, weightInitialization, activationFunction)
+            self.layers[layerIndex] = OutputLayer(
+                kwargs['layerSize'], kwargs['inputSize'], 
+                kwargs['weightInitialization'], kwargs['activationFunction']
+            )
+        elif layerType == "convolutional":
+            self.layers[layerIndex] = ConvolutionalLayer(
+                kwargs['inputSize'], kwargs['inputDepth'], kwargs['kernelSize'],
+                kwargs['kernelCount'], kwargs['stride'], kwargs['padding'],
+                kwargs['weightInitialization'], kwargs['activationFunction']
+            )
+        elif layerType == "pooling":
+            self.layers[layerIndex] = PoolingLayer(
+                kwargs['inputSize'], kwargs['inputDepth'], kwargs['kernelSize'],
+                kwargs['stride'], kwargs['poolingFunction']
+            )
         
     def feedForward(self, input, label, batchIndex, batchItemIndex):
         activations = self.layers[0].feedForward(input, batchItemIndex)
@@ -178,7 +204,6 @@ class NeuralNetwork:
             activations = self.layers[i].feedForward(activations, batchItemIndex)
 
         self.activations[batchIndex, batchItemIndex] = activations
-
         self.loss[batchIndex, batchItemIndex] = self.lossfunction.forward(activations, label)   
 
         return activations
@@ -187,12 +212,18 @@ class NeuralNetwork:
         dLda = np.zeros(CLASSSIZE, dtype=np.float32)
         for i in range(BATCHSIZE):
             dLda += self.lossfunction.backward(self.activations[batchIndex, i], batchLabels[i])
-
         dLda /= BATCHSIZE
-        batchGradient = self.layers[self.layerCount - 1].backPropagate(dLda) # returns dLdz for batch
+
+        # calculate dLdz for whole batch and update last layer
+        batchGradient = self.layers[self.layerCount - 1].backPropagate(dLda) 
 
         for i in range(self.layerCount - 2, -1, -1):
-            batchGradient = self.layers[i].backPropagate(batchGradient, self.layers[i + 1].weights) 
+            if type(self.layers[i]).__name__ == "FullyConnectedLayer": 
+                # fully connected layer
+                batchGradient = self.layers[i].backPropagate(batchGradient, self.layers[i + 1].weights) 
+            else:
+                # convolutional or pooling layer
+                batchGradient = self.layers[i].backPropagate(batchGradient)
 
         print(np.mean(self.loss[batchIndex]))
         return np.mean(self.loss[batchIndex])

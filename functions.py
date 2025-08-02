@@ -68,7 +68,13 @@ class MaxPool:
     def forward(input):
         return np.max(input)
 
+    def backward():
+        pass
+
 
 class AveragePool:
     def forward(input):
         return np.average(input)
+
+    def backward():
+        pass
