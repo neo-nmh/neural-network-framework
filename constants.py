@@ -1,0 +1,10 @@
+import numpy as np
+
+# Constants used across modules
+TRAININGSIZE = 60000
+TESTINGSIZE = 10000 
+FEATURESIZE = 784
+BATCHSIZE = 1
+CLASSSIZE = 10 
+LEARNINGRATE = np.float32(0.001)
+EPOCHS = 1

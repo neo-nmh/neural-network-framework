@@ -1,6 +1,4 @@
 import numpy as np
-from neuralnetwork import CLASSSIZE
-
 
 # activation functions operate on whole layers at a time
 class ReLu:
@@ -42,39 +40,3 @@ class Softmax:
     # this only works with cross entropy 
     def backward(weightedSum, activations):
         return 1
-
-
-# loss functions
-class MSE:
-    def forward(activations, label):
-        loss = np.sum((np.square(label - activations)))
-        return loss / (2 * len(activations))
-
-    # dL/da = 1/n(a-y)
-    def backward(activations, label):
-        return (1 / CLASSSIZE) * (activations - label)
-
-class CrossEntropy:
-    def forward(activations, label):
-        activations = np.clip(activations, 1e-12, 1. - 1e-12) # prevents log(0)
-        return -1 * np.sum(label * np.log(activations))
-
-    # this only works with softmax 
-    def backward(activations, label):
-        return activations - label
-
-# pooling functions
-class MaxPool:
-    def forward(input):
-        return np.max(input)
-
-    def backward():
-        pass
-
-
-class AveragePool:
-    def forward(input):
-        return np.average(input)
-
-    def backward():
-        pass
