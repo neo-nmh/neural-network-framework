@@ -1,6 +1,5 @@
 import numpy as np
 
-# Constants used across modules
 TRAININGSIZE = 60000
 TESTINGSIZE = 10000 
 FEATURESIZE = 784
