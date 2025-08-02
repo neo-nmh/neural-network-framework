@@ -1,5 +1,5 @@
 import numpy as np
-from fullyconnected import FullyConnectedLayer, OutputLayer
+from fullyconnectedlayer import FullyConnectedLayer, OutputLayer
 from convlayer import ConvolutionalLayer
 from poolinglayer import PoolingLayer
 from constants import TRAININGSIZE, BATCHSIZE, CLASSSIZE

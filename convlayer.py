@@ -60,5 +60,5 @@ class ConvolutionalLayer:
         # return activations shaped as images
         return activationsReshaped
 
-    def backPropagate():
+    def backPropagate(self, nextLayerBatchGradients):
         return 0

@@ -12,6 +12,7 @@ class FullyConnectedLayer:
         self.inputs             = np.empty((BATCHSIZE, inputSize), dtype=np.float32)
         self.weightedSum        = np.empty((BATCHSIZE, layerSize), dtype=np.float32)
 
+    # calculate outputs batch item at a time
     def feedForward(self, input, batchItemIndex):
         # if input is from conv or pooling layer
         if input.ndim > 1:
@@ -25,6 +26,7 @@ class FullyConnectedLayer:
 
         return activations
 
+    # backpropagate using outputs from whole batch
     def backPropagate(self, nextLayerBatchGradients, nextLayerWeights):
         # calculate gradients to pass back 
         batchGradients = np.zeros((BATCHSIZE, self.layerSize), dtype=np.float32)
@@ -42,19 +44,17 @@ class FullyConnectedLayer:
         return batchGradients
 
 # gradient calculation for this layer is different
+# the rest is same for as FullyConnectedLayer
 class OutputLayer(FullyConnectedLayer):
     def backPropagate(self, dLda):
-        # calculate gradients to pass back 
         batchGradients = np.zeros((BATCHSIZE, CLASSSIZE), dtype=np.float32)
         for i in range(BATCHSIZE):
             dadz = self.activationFunction.backward(self.weightedSum[i], self.activations[i])
             batchGradients[i] = dLda * dadz
 
-        # change w and b
         dLdw = (batchGradients.T @ self.inputs) / BATCHSIZE
         averageGradient = batchGradients.mean(axis=0) 
         self.biases -= LEARNINGRATE * averageGradient
         self.weights -= LEARNINGRATE * dLdw
 
-        # pass gradients to prev layer
         return batchGradients
