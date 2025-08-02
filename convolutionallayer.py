@@ -48,7 +48,7 @@ class ConvolutionalLayer:
                 patchMatrix[:, i] = input[:, j:(j + self.kernelSize), k:(k + self.kernelSize)].flatten()
                 i += 1
 
-        # calculate weighted sum
+        # calculate weighted sum and store reshaped as image
         weightedSum = (self.kernelMatrix @ patchMatrix) + self.biases
         self.weightedSum[batchItemIndex] = weightedSum.reshape(self.kernelCount, self.activationSize, self.activationSize)
 

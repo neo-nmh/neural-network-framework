@@ -32,5 +32,5 @@ class PoolingLayer:
         # return activations shaped as images
         return self.activations[batchItemIndex]
 
-    def backPropagate():
+    def backPropagate(self, nextLayerBatchGradients):
         return 0
