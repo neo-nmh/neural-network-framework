@@ -1,11 +1,11 @@
 import numpy as np
-from neuralnetwork import NeuralNetwork
-from activationfunctions import Tanh, Softmax
-from lossfunctions import CrossEntropy
-from weightinitializations import heNormal
-from initdata import initData
-from visualizations import plotLoss
-from constants import *
+from neuralnetwork import *
+from activationfunctions import *
+from lossfunctions import *
+from weightinitializations import *
+from initdata import *
+from visualizations import *
+from hyperparameters import *
 
 # numpy array print settings
 np.set_printoptions(suppress=True, precision=2)
@@ -19,9 +19,35 @@ if __name__ == "__main__":
     testLabels = data["testLabels"]
 
     # init network
-    nn = NeuralNetwork(layerCount=2, lossfunction=CrossEntropy)
-    nn.addLayer(layerIndex=0, inputSize=784, layerSize=128, layerType="fullyConnected", weightInitialization=heNormal, activationFunction=Tanh)
-    nn.addLayer(layerIndex=1, inputSize=128, layerSize=CLASSSIZE, layerType="output", weightInitialization=heNormal, activationFunction=Softmax)
+    nn = NeuralNetwork(layerCount=3, lossfunction=CrossEntropy)
+    nn.addLayer(
+        layerType="convolutional", 
+        layerIndex=0,
+        inputSize=28, 
+        inputDepth=1, 
+        kernelSize=5, 
+        kernelCount=3, 
+        stride=1,
+        padding=2,
+        weightInitialization=heNormalConv,
+        activationFunction=ReLu
+        )
+    nn.addLayer(
+        layerType="fullyConnected", 
+        layerIndex=1, 
+        inputSize=2352, 
+        layerSize=128, 
+        weightInitialization=heNormal, 
+        activationFunction=ReLu
+        )
+    nn.addLayer(
+        layerType="output", 
+        layerIndex=2, 
+        inputSize=128, 
+        layerSize=CLASSSIZE, 
+        weightInitialization=heNormal, 
+        activationFunction=Softmax
+        )
 
     # train network
     losses = []

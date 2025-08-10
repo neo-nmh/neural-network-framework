@@ -1,5 +1,5 @@
 import numpy as np
-from constants import CLASSSIZE
+from hyperparameters import CLASSSIZE
 
 # loss functions
 class MSE:

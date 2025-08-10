@@ -1,5 +1,5 @@
 import numpy as np
-from constants import BATCHSIZE, CLASSSIZE, LEARNINGRATE
+from hyperparameters import BATCHSIZE, CLASSSIZE, LEARNINGRATE
 
 class FullyConnectedLayer:
     def __init__(self, layerSize, inputSize, weightInitialization, activationFunction):        

@@ -1,5 +1,5 @@
 import numpy as np
-from constants import BATCHSIZE
+from hyperparameters import BATCHSIZE
 
 class PoolingLayer:
     def __init__(self, inputSize, inputDepth, kernelSize, stride, poolingFunction):

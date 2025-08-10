@@ -1,8 +1,8 @@
 import numpy as np
 from fullyconnectedlayer import FullyConnectedLayer, OutputLayer
-from convlayer import ConvolutionalLayer
+from convolutionallayer import ConvolutionalLayer
 from poolinglayer import PoolingLayer
-from constants import TRAININGSIZE, BATCHSIZE, CLASSSIZE
+from hyperparameters import TRAININGSIZE, BATCHSIZE, CLASSSIZE
 
 # numpy array print settings
 np.set_printoptions(suppress=True, precision=2)
@@ -64,8 +64,14 @@ class NeuralNetwork:
             if type(self.layers[i]).__name__ == "FullyConnectedLayer": 
                 # fully connected layer
                 batchGradient = self.layers[i].backPropagate(batchGradient, self.layers[i + 1].weights) 
+            elif type(self.layers[i]).__name__ == "ConvolutionalLayer":
+                # convolutional layer - check if next layer is fully connected
+                if hasattr(self.layers[i + 1], 'weights'):
+                    batchGradient = self.layers[i].backPropagate(batchGradient, self.layers[i + 1].weights)
+                else:
+                    batchGradient = self.layers[i].backPropagate(batchGradient)
             else:
-                # convolutional or pooling layer
+                # pooling layer
                 batchGradient = self.layers[i].backPropagate(batchGradient)
 
         print(np.mean(self.loss[batchIndex]))
